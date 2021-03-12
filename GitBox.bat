@@ -1,8 +1,9 @@
 @echo off
 color 3f
 title Git工具
-mode con lines=30 cols=60
+mode con lines=42 cols=60
 :LABEL_MENU
+cls
 color 3f
 echo.
 echo.
@@ -14,28 +15,35 @@ echo             ▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇
 echo.
 echo ------------------------------------------------------------
 echo.
-echo			  1.初始化用户定义数据
+echo			0.[下载]从远程分支克隆仓库
 echo.
-echo			  2.从远程分支更新文件
+echo			1.[设置]初始化用户定义数据
 echo.
-echo			  3.同步本地更改到远程
+echo			2.[更新]从远程分支更新文件
 echo.
-echo			  4.强制放弃本地的更改（危险）
+echo			3.[保存]同步本地更改到远程
 echo.
-echo			  5.强制用本地版本覆盖（危险）
+echo			4.[删除]强制放弃本地的更改（危险）
 echo.
-echo			  6.强制只保留最新版本（危险）
+echo			5.[删除]强制用本地版本覆盖（危险）
 echo.
-echo			  7.查看并修改版本分支
+echo			6.[删除]强制只保留最新版本（危险）
 echo.
-echo			  q.放弃修改并退出工具
+echo			7.[切换]查看并修改版本分支
+echo.
+echo			8.[更新]从远程仓库下载分支
+echo.
+echo			9.[合并]合并两个独立的分支
+echo.
+echo			m.[合并]可视化合并冲突工具
+echo.
+echo			q.[退出]放弃修改并退出工具
 echo.
 echo ------------------------------------------------------------
 echo.
 set /p sel=请输入选项前面的序号:
-cls
 if %sel%==0 (
-  exit
+  goto LABEL_0
 ) else if %sel%==1 (
   goto LABEL_1
 ) else if %sel%==2 (
@@ -50,6 +58,13 @@ if %sel%==0 (
   goto LABEL_6
 ) else if %sel%==7 (
   goto LABEL_7
+) else if %sel%==8 (
+  goto LABEL_8
+) else if %sel%==9 (
+  goto LABEL_9
+) else if %sel%==m (
+  git mergetool
+  goto LABEL_MENU
 ) else if %sel%==q (
   exit
 ) else if %sel%==exit (
@@ -60,10 +75,35 @@ if %sel%==0 (
   start notepad2 %0
   goto LABEL_MENU
 )else (
+  color 4f
+  echo.
+  echo ------------------------------------------------------------
   echo 输入命令不正确，请重新输入！
+  echo ------------------------------------------------------------
   timeout /t 1 >nul
   goto LABEL_MENU
 )
+
+REM ###############################################################
+:LABEL_0
+cls
+color 8f
+echo.
+echo.
+echo             ▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇
+echo             ▇                                ▇
+echo             ▇      ***克隆远程仓库***        ▇
+echo             ▇                                ▇
+echo             ▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇
+echo.
+echo ------------------------------------------------------------
+echo.
+set /p adr=请输入地址:
+git clone %adr%
+timeout /t 5  >nul
+goto LABEL_SUCC
+REM ###############################################################
+
 REM ###############################################################
 :LABEL_1
 cls
@@ -80,6 +120,7 @@ echo ------------------------------------------------------------
 echo.
 set /p yxh=请输入邮箱:
 git config --global user.email %yxh%
+timeout /t 2  >nul
 echo.
 set /p yhm=请输入姓名:
 git config --global user.name  %yhm%
@@ -101,7 +142,7 @@ echo             ▇       ***正在下载数据***       ▇
 echo             ▇                                ▇
 echo             ▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇
 git pull || git checkout
-timeout /t 5
+timeout /t 5   >nul
 goto LABEL_SUCC
 REM ###############################################################
 
@@ -121,6 +162,7 @@ echo             ▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇
 git add .
 git commit -m "Updated"%date:~0,4%%date:~5,2%%date:~8,2%%time:~0,2%%time:~3,2%%time:~6,2%
 git push
+timeout /t 5   >nul
 goto LABEL_SUCC
 REM ###############################################################
 
@@ -169,7 +211,7 @@ if %MsHtaReturnValue% == 1 (
     git fetch --all
     git reset --hard origin/master
     git pull
-    timeout /t 2 >nul
+    timeout /t 5 >nul
     goto LABEL_SUCC
 ) else (
     cls
@@ -185,8 +227,8 @@ if %MsHtaReturnValue% == 1 (
     echo.
     echo.
     echo -------------------用户放弃同步，同步中止-------------------
-    timeout /t 3  >nul
-    goto LABEL_SUCC
+    timeout /t 9  >nul
+    goto LABEL_MENU
 )
 goto LABEL_SUCC
 REM ###############################################################
@@ -244,7 +286,7 @@ if %MsHtaReturnValue% == 1 (
     git add .
     git commit -m "Updated"%date:~0,4%%date:~5,2%%date:~8,2%%time:~0,2%%time:~3,2%%time:~6,2%
     git push -f
-    timeout /t 2 >nul
+    timeout /t 9 >nul
     goto LABEL_SUCC
 ) else (
     cls
@@ -261,7 +303,7 @@ if %MsHtaReturnValue% == 1 (
     echo.
     echo -------------------用户放弃同步，同步中止-------------------
     timeout /t 3  >nul
-    goto LABEL_SUCC
+    goto LABEL_MENU
 )
 goto LABEL_SUCC
 REM ###############################################################
@@ -323,9 +365,14 @@ if %MsHtaReturnValue% == 1 (
     echo             ▇       ***正在丢弃版本***       ▇
     echo             ▇                                ▇
     echo             ▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇
+    git checkout --orphan latest_branch
+    git add -A
     git add .
     git commit -m "Updated"%date:~0,4%%date:~5,2%%date:~8,2%%time:~0,2%%time:~3,2%%time:~6,2%
+    git branch -D master
+    git branch -m master
     git push -f
+	timeout /t 9   >nul
     goto LABEL_SUCC
 ) else (
     cls
@@ -342,7 +389,7 @@ if %MsHtaReturnValue% == 1 (
     echo.
     echo -------------------用户放弃丢弃，同步中止-------------------
     timeout /t 3  >nul
-    goto LABEL_SUCC
+    goto LABEL_MENU
 )
 goto LABEL_SUCC
 REM ###############################################################
@@ -361,7 +408,7 @@ echo             ▇       ***切换版本分支***       ▇
 echo             ▇                                ▇
 echo             ▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇
 echo.
-echo ---------------------------全部分支-------------------------
+echo --------------------------全部分支--------------------------
 git branch
 color cf
 echo ------------------------------------------------------------
@@ -370,11 +417,121 @@ set /p mbh=请输入切换的分支名称：
 echo.
 echo 即将切换到%mbh%，五秒后开始执行......
 timeout /t 5  >nul
-git checkout %mbh%
-timeout /t 3  >nul
+git checkout -b %mbh%
+git pull
+timeout /t 5  >nul
 goto LABEL_SUCC
 REM ###############################################################
 
+REM ###############################################################
+:LABEL_8
+cls
+color cf
+echo.
+echo.
+echo.
+echo             ▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇
+echo             ▇                                ▇
+echo             ▇       ***切换版本分支***       ▇
+echo             ▇                                ▇
+echo             ▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇
+echo.
+echo --------------------------本地分支--------------------------
+git branch
+color cf
+echo ------------------------------------------------------------
+echo.
+echo --------------------------全部分支--------------------------
+git branch -a
+color cf
+echo ------------------------------------------------------------
+echo.
+set /p mbh=请输入下载的分支名称：
+echo.
+echo 即将切换到%mbh%，五秒后开始执行......
+timeout /t 5  >nul
+git checkout -b %mbh% origin/%mbh%
+git pull
+timeout /t 5  >nul
+goto LABEL_SUCC
+REM ###############################################################
+
+REM ###############################################################
+:LABEL_9
+cls
+color cf
+echo.
+echo.
+echo             ▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇
+echo             ▇                                ▇
+echo             ▇      ***合并系统版本***        ▇
+echo             ▇                                ▇
+echo             ▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇
+echo.
+echo                      ***合并简介***
+echo.
+echo                      A---C---E---G（分支2）
+echo                       \         /
+echo                        B---D---F（分支1）
+echo.
+echo         要把F合并到G，[起始]是分支1，[目的]是分支2
+echo.
+echo           合成之后，分支2不再存在，F属于分支1
+echo ------------------------------------------------------------
+echo.
+echo -------------------------本地分支---------------------------
+git branch
+color cf
+echo ------------------------------------------------------------
+echo.
+set /p fz1=请输入合并的[起始]分支（务必仔细确认）：
+set /p fz2=请输入合并的[目的]分支（默认当前分支）：
+timeout /t 1  >nul
+cls
+color af
+echo.
+echo.
+echo             ▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇
+echo             ▇                                ▇
+echo             ▇      ***合并信息确认***        ▇
+echo             ▇                                ▇
+echo             ▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇
+echo.
+echo -------------------------本地分支---------------------------
+git branch
+color cf
+echo ------------------------------------------------------------
+echo.          
+echo                合并分支：%fz1%---^>%fz2%
+echo. 
+echo ------------------------------------------------------------
+set /p okk=我确认上述信息无误，输入[YES]执行合并:
+echo ------------------------------------------------------------
+if %okk%==YES (
+  goto LABEL_MERG
+) else if %okk%==Yes (
+  goto LABEL_MERG
+) else if %okk%==Yes (
+  goto LABEL_MERG
+) else if %okk%==yes (
+  goto LABEL_MERG
+) else (
+  goto LABEL_MENU
+)
+
+:LABEL_MERG
+echo. 
+echo ------------------------------------------------------------
+echo 即将把%fz1%的更改合并到%fz2%，五秒后开始执行......
+echo ------------------------------------------------------------
+echo. 
+timeout /t 5 >nul
+git checkout %fz2%
+git merge --no-ff -m "分支合并于"%date:~0,4%%date:~5,2%%date:~8,2%%time:~0,2%%time:~3,2%%time:~6,2% %fz1%
+echo. 
+timeout /t 999
+goto LABEL_SUCC
+REM ###############################################################
 
 REM ###############################################################
 :LABEL_SUCC
@@ -405,6 +562,6 @@ echo.
 echo.
 echo.
 echo.
-timeout /t 3  >nul
+timeout /t 2  >nul
 goto LABEL_MENU
 REM ###############################################################
