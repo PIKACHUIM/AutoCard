@@ -40,11 +40,19 @@ PostHeads = {
     'Sec-Fetch-Site': 'same-origin',
 }
 
+global times
+
 
 # -----------------------------------------------------调试信息输出-------------------------------------------------------
 def debugLog(in_head, in_info, in_leve=0):
+    global times
     infos = ['信息', '成功', '失败', '警告', '错误', '恐慌']
     print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), "[" + in_head + "][" + infos[in_leve] + "]：", in_info)
+    with open("./run/" + times + ".log", "a") as files:
+        files.write(str(
+            time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) + "[" + in_head + "][" + infos[in_leve] + "]：" + str(
+                in_info)) + "\n")
+    files.close()
 
 
 # -----------------------------------------------------提交打卡程序-------------------------------------------------------
@@ -104,18 +112,9 @@ def usrLogin(in_user, in_pass, in_sesi):
 
 
 # -----------------------------------------------------自动打卡程序-------------------------------------------------------
-def autoCard(in_flag):
+def autoCard(in_flag, in_time):
     debugLog("自动打卡", "开始执行" + datetime.datetime.now().strftime('%Y-%m-%d-%H') + "的打卡任务", 0)
-    cards_time = int(datetime.datetime.now().strftime('%H'))
     cards_nums = 0
-    if cards_time < 7:
-        cards_hour = 1
-    elif 7 <= cards_time < 9:
-        cards_hour = 2
-    elif 9 <= cards_time < 11:
-        cards_hour = 0
-    else:
-        cards_hour = 3
     try:
         with open("config.json", 'r') as load_f:
             mysql_conf = json.load(load_f)
@@ -147,7 +146,7 @@ def autoCard(in_flag):
         debugLog('数据读取', '无法获取用户:' + str(cards_errs), 5)
         return 1
     for cards_user in mysql_dat1:
-        if cards_hour != cards_user[7]:
+        if in_time != cards_user[7] and in_time != -1:
             continue
         time.sleep(10)
         cards_nums = cards_nums + 1
@@ -221,8 +220,36 @@ def mailPost(text, mail, head, yxzh, yxmm, host, port=465, pcrt='SSL'):
 
 # -----------------------------------------------------主要调用入口-------------------------------------------------------
 if __name__ == '__main__':
-    if len(sys.argv) > 1 and sys.argv[1] == 'nomail':
-        autoCard(0)
-    else:
-        autoCard(1)
+    global times
+    times = time.strftime("%Y%m%d%H%M%S", time.localtime(time.time()))
+    main_mail = True
+    main_time = 4
+    if len(sys.argv) > 1:
+        for ptrs in sys.argv:
+            if ptrs == 'nomail':
+                main_mail = False
+            elif ptrs == "time00":
+                main_time = 0
+            elif ptrs == "time07":
+                main_time = 1
+            elif ptrs == "time09":
+                main_time = 2
+            elif ptrs == "time11":
+                main_time = 3
+            elif ptrs == "timeXX":
+                main_time = -1
+            else:
+                pass
+    if main_time == 4:
+        cards_time = int(datetime.datetime.now().strftime('%H'))
+        if cards_time < 7:
+            main_time = 1
+        elif 7 <= cards_time < 9:
+            main_time = 2
+        elif 9 <= cards_time < 11:
+            main_time = 0
+        else:
+            main_time = 3
+    autoCard(main_mail, main_time)
+
 # ----------------------------------------------------------------------------------------------------------------------
