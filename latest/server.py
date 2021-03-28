@@ -148,7 +148,7 @@ def autoCard(in_flag, in_time):
     for cards_user in mysql_dat1:
         if in_time != cards_user[7] and in_time != -1:
             continue
-        time.sleep(10)
+        time.sleep(1)
         cards_nums = cards_nums + 1
         debugLog('当前选中', '当前选中用户学号：' + str(cards_user[0]), 0)
         cards_sesi = requests.Session()

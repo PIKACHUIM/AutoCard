@@ -26,7 +26,12 @@ def debugLog(in_head, in_info, in_leve=0):
 
 
 # -----------------------------------------------------自动打卡程序-------------------------------------------------------
-def autoMail(in_text, in_time):
+def autoMail(in_text, in_cont, in_flag, in_bgat):
+    print( in_flag,type( in_flag))
+    if in_bgat==0:
+        cards_flag = True
+    else:
+        cards_flag = False
     debugLog("自动打卡", "开始执行" + datetime.datetime.now().strftime('%Y-%m-%d-%H') + "的邮件任务", 0)
     cards_nums = 0
     try:
@@ -60,19 +65,23 @@ def autoMail(in_text, in_time):
         debugLog('数据读取', '无法获取用户:' + str(cards_errs), 5)
         return 1
     for cards_user in mysql_dat1:
-        if in_time != cards_user[7]:
-            continue
-        time.sleep(10)
+        time.sleep(0)
         cards_nums = cards_nums + 1
+        if str(in_bgat) == str(cards_user[0]):
+            cards_flag = True
+        if not cards_flag:
+            continue
+        if in_flag and cards_user[0]!= 2018141461344:
+            continue
         debugLog('当前选中', '当前选中用户学号：' + str(cards_user[0]), 0)
         cards_sesi = requests.Session()
         title_text = "<h2>SCU健康每日报自动打卡系统</h2><br />"
-        infos_text = "你好，你的账号：<b> " + str(cards_user[0]) + "<br /></b>"
-        detai_text = "<br />通知信息：<b>" + in_text + "</b>"
+        infos_text = "<br />请注意：<b>" + in_text + "</b>"
+        detai_text = "<br />" + in_cont
         tails_text = "<br />获取更多信息请访问<a href='http://card.52pika.cn'>皮卡丘自动打卡平台</a>"
         try:
             mailPost(title_text + infos_text + detai_text + tails_text, cards_user[2],
-                     "【SCU自动打卡系统】" + time.strftime("%Y-%m-%d", time.localtime()) + "的打卡",
+                     "【SCU自动打卡系统】" + in_text,
                      mysql_dat2[0][2], mysql_dat2[1][2], mysql_dat2[2][2], mysql_dat2[3][2], mysql_dat2[4][2])
         except BaseException or IOError:
             debugLog('邮件发送', '邮件发送异常！！！！', 2)
@@ -109,5 +118,12 @@ def mailPost(text, mail, head, yxzh, yxmm, host, port=465, pcrt='SSL'):
 if __name__ == '__main__':
     global times
     times = time.strftime("%Y%m%d%H%M%S", time.localtime(time.time()))
-    if len(sys.argv) > 1:
-        autoMail(sys.argv[1])
+    if len(sys.argv) > 2:
+        if len(sys.argv) > 4:
+            #        邮件标题     邮件内容     是否调试           继续位置
+            autoMail(sys.argv[1], sys.argv[2], True if sys.argv[3].lower() == 'true' else False, int(sys.argv[4]))
+        elif len(sys.argv) > 3:
+            #        邮件标题     邮件内容     是否调试
+            autoMail(sys.argv[1], sys.argv[2], True if sys.argv[3].lower() == 'true' else False, 0)
+        else:
+            autoMail(sys.argv[1], sys.argv[2], False,             0)
