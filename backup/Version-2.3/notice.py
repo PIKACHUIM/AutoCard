@@ -4,17 +4,17 @@
 # --------------------------------------------
 #
 #       四川大学SCU健康每日报自动打卡平台
-#                 打卡核心程序
+#                 邮件通知服务
 #
 #    AutoCard for SCU 2019-nCov Application
-#                 Core Service
+#                 Mail Service
 #
 #                 Version 2.3
 #
 #    Code By Pikachu & Updated on MAR30/2021
 #    ©2020-2021 Pikachu. All Rights Reserved
 # --------------------------------------------
-
+global times
 import re
 import sys
 import time
@@ -85,8 +85,6 @@ PostHeads = {
     'Sec-Fetch-Site': 'same-origin',
 }
 
-global times
-
 
 # -----------------------------------------------------调试信息输出-------------------------------------------------------
 def debugLog(in_head, in_info, in_leve=0):
@@ -99,85 +97,22 @@ def debugLog(in_head, in_info, in_leve=0):
                 in_info)) + "\n")
     files.close()
 
-
-@time_out(5, timeout_callback)
-def timeouts(cards_user):
-    cards_sesi = requests.Session()
-    cards_data = usrLogin(cards_user[0], cards_user[1], cards_sesi)
-    cards_sesi.close()
-    return cards_data
     
 @time_out(9, timeout_callback)
-def sendmail(title_text, infos_text, detai_text, tails_text, cards_user, mysql_dat2):
+def sendmail(in_head, title_text, infos_text, detai_text, tails_text, cards_user, mysql_dat2):
     try:
         mailPost(title_text + infos_text + detai_text + tails_text, cards_user[2],
-        "【SCU自动打卡系统】" + time.strftime("%Y-%m-%d", time.localtime()) + "的打卡",
+        "【SCU自动打卡系统】" + in_head,
         mysql_dat2[0][2], mysql_dat2[1][2], mysql_dat2[2][2], mysql_dat2[3][2], mysql_dat2[4][2])
         return True
     except BaseException or IOError:
         debugLog('邮件发送', '邮件发送异常！！！！', 2)
         return False
 
-# -----------------------------------------------------提交打卡程序-------------------------------------------------------
-def postCard(in_sesi, in_data):
-    try:
-        cards_temp = eval(in_data[0])
-        cards_temp['date'] = time.strftime("%Y%m%d", time.localtime(time.time()))
-        cards_info = in_sesi.post(url=postsUrls, headers=PostHeads, data=cards_temp).json()
-        if '今天已经填报了' in cards_info['m']:
-            return 3
-        elif '操作成功' in cards_info['m']:
-            return 0
-        else:
-            return 5
-    except requests.exceptions.ConnectionError or BaseException or ValueError:
-        return 1
-
-
-# ----------------------------------------------------登录认证函数--------------------------------------------------------
-def usrLogin(in_user, in_pass, in_sesi):
-    try:
-        login_sesi = in_sesi
-        login_info = login_sesi.get(url=loginUrls, headers=PostHeads, verify=False)
-    except requests.exceptions.ConnectionError or BaseException:
-        return 1
-    if login_info.text.find('execution') > 0 and login_info.text.find('_eventId') > 0:
-        try:
-            login_exec = login_info.text[login_info.text.find('execution') + 18:login_info.text.find('_eventId') - 16]
-        except ValueError or BaseException:
-            return 4
-    else:
-        return 1
-    login_data = {
-        'username': str(in_user),
-        'password': str(in_pass),
-        'submit': '登录',
-        'type': 'username_password',
-        '_eventId': 'submit',
-        'execution': login_exec
-    }
-    try:
-        login_info = login_sesi.post(url=loginUrls, data=login_data, headers=PostHeads, verify=False)
-    except requests.exceptions.ConnectionError or BaseException:
-        return 1
-    if login_info.text.find('川大疫情防控每日报系统') < 0:
-        if login_info.text.find('移动微服务') >= 0:
-            return 2
-        else:
-            return 1
-    try:
-        login_last = re.findall(r'.*?oldInfo: (.*),.*?', login_info.text)
-    except ValueError or BaseException:
-        return 4
-    if login_last == '':
-        return 4
-    return postCard(in_sesi, login_last)
-
-
 # -----------------------------------------------------自动打卡程序-------------------------------------------------------
-def autoCard(in_flag, in_time):
+def autoMail(in_head, in_text, in_flag, in_bgat, in_ends):
     debugLog("自动打卡", "-------------------------------")
-    debugLog("自动打卡", "开始执行" + datetime.datetime.now().strftime('%Y-%m-%d-%H') + "的打卡任务", 0)
+    debugLog("自动打卡", "开始执行" + datetime.datetime.now().strftime('%Y-%m-%d-%H') + "的邮件任务", 0)
     debugLog("自动打卡", "-------------------------------")
     cards_nums = 0
     try:
@@ -186,7 +121,7 @@ def autoCard(in_flag, in_time):
     except pymysql.err.OperationalError or KeyError or FileNotFoundError or Exception:
         debugLog('数据读取', '无法读取JSON！！！', 5)
         return 1
-    mysql_sql1 = "SELECT * FROM pc_user WHERE flag = 1".format(1)
+    mysql_sql1 = "SELECT * FROM pc_user WHERE 1".format(1)
     mysql_sql2 = "SELECT * FROM pc_info".format(1)
     try:
         mysql_conn = pymysql.connect(host=mysql_conf['db_host'],
@@ -211,54 +146,23 @@ def autoCard(in_flag, in_time):
         debugLog('数据读取', '无法获取用户:' + str(cards_errs), 5)
         return 1
     for cards_user in mysql_dat1:
-        if in_time != cards_user[7] and in_time != -1:
+        if in_flag and str(cards_user[0])!="2018141461344":
             continue
+        if int(cards_user[0]) < in_bgat:
+            continue
+        if int(cards_user[0]) > in_ends:
+            break
         time.sleep(1)
         cards_nums = cards_nums + 1
         debugLog('当前选中', '当前选中用户学号：' + str(cards_user[0]), 0)
-        cards_flag = 5
-        while cards_flag > 0:
-            cards_data = timeouts(cards_user)
-            if cards_data is not None:
-                cards_flag = -1
-            elif cards_flag==1:
-                debugLog('打卡结果', '此用户全部打卡尝试失败,跳过打卡')
-                cards_data=5
-                cards_flag = cards_flag -1
-            else:
-                debugLog('打卡结果', '第'+ str(6-cards_flag)+'次打卡超时失败，即将重试打卡')
-                cards_flag = cards_flag -1
         title_text = "<h2>SCU健康每日报自动打卡系统</h2><br />"
-        infos_text = "你好，你的账号：<b> " + str(cards_user[0]) + "<br /></b>今日的打卡情况：" + statucode[cards_data]
-        detai_text = "<br />系统详细信息：<b>" + detailnum[cards_data] + "</b>"
+        infos_text = "你好，账号：<b> " + str(cards_user[0]) + "</b>，下列消息值得你关注："
+        detai_text = "<br />" + in_text + "</b>"
         tails_text = "<br />获取更多信息请访问<a href='http://card.52pika.cn'>皮卡丘自动打卡平台</a>"
-        debugLog('打卡结果', statucode[cards_data] + ',' + detailnum[cards_data], cards_data)
-        if cards_data == 0:
-            mysql_sql3 = ("UPDATE pc_user SET succ=" + str(int(cards_user[3]) + 1) + " WHERE user=" + str(
-                cards_user[0])).format(1)
-        else:
-            mysql_sql3 = ("UPDATE pc_user SET fail=" + str(int(cards_user[4]) + 1) + " WHERE user=" + str(
-                cards_user[0])).format(1)
-        try:
-            mysql_sql4 = ("INSERT INTO pc_logs (dkid,time,user,flag,info) VALUES ("
-                          + "'" + str(int(datetime.datetime.now().strftime('%y%m%d%H%M')) * 10000 + cards_nums) + "',"
-                          + "'" + datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') + "',"
-                          + "'" + str(cards_user[0]) + "',"
-                          + "'" + statucode[cards_data] + "',"
-                          + "'" + detailnum[cards_data] + "'"
-                          + ")").format(1)
-            with mysql_conn.cursor() as cursor:
-                cursor.execute(mysql_sql3)
-                cursor.execute(mysql_sql4)
-            mysql_conn.commit()
-        except pymysql.err.IntegrityError or pymysql.err.IntegrityError or ValueError or BaseException:
-            debugLog('数据操作', '日志写入异常！！！！', 3)
-            mysql_conn.rollback()
-        if in_flag and (int(cards_user[6]) == 1 or int(cards_data) > 3 or (0 < int(cards_data) < 3)):
-            sendmail(title_text, infos_text, detai_text, tails_text, cards_user, mysql_dat2)
+        sendmail(in_head, title_text, infos_text, detai_text, tails_text, cards_user, mysql_dat2)
     mysql_conn.close()
     debugLog("自动打卡", "-------------------------------")
-    debugLog("自动打卡", "成功完成" + datetime.datetime.now().strftime('%Y-%m-%d-%H') + "的打卡任务", 0)
+    debugLog("自动打卡", "成功完成" + datetime.datetime.now().strftime('%Y-%m-%d-%H') + "的邮件任务", 0)
     debugLog("自动打卡", "-------------------------------")
 
 
@@ -294,34 +198,15 @@ def mailPost(text, mail, head, yxzh, yxmm, host, port=465, pcrt='SSL'):
 if __name__ == '__main__':
     global times
     times = time.strftime("%Y%m%d%H%M%S", time.localtime(time.time()))
-    main_mail = True
-    main_time = 4
-    if len(sys.argv) > 1:
-        for ptrs in sys.argv:
-            if ptrs == 'nomail':
-                main_mail = False
-            elif ptrs == "time00":
-                main_time = 1
-            elif ptrs == "time07":
-                main_time = 2
-            elif ptrs == "time09":
-                main_time = 0
-            elif ptrs == "time11":
-                main_time = 3
-            elif ptrs == "timeXX":
-                main_time = -1
-            else:
-                pass
-    if main_time == 4:
-        cards_time = int(datetime.datetime.now().strftime('%H'))
-        if cards_time < 7:
-            main_time = 1
-        elif 7 <= cards_time < 9:
-            main_time = 2
-        elif 9 <= cards_time < 11:
-            main_time = 0
-        else:
-            main_time = 3
-    autoCard(main_mail, main_time)
+    if len(sys.argv) > 5:
+        autoMail(sys.argv[1], sys.argv[2], str(sys.argv[3])=="True", int(sys.argv[4]), int(sys.argv[5]))
+    elif len(sys.argv) > 4:
+        autoMail(sys.argv[1], sys.argv[2], str(sys.argv[3])=="True", int(sys.argv[4]), 9999999999999)
+    elif len(sys.argv) > 3:
+        autoMail(sys.argv[1], sys.argv[2], str(sys.argv[3])=="True", 0, 9999999999999)
+    elif len(sys.argv) > 2:
+        autoMail(sys.argv[1], sys.argv[2], True,                     0, 9999999999999)
+    else:
+        debugLog("执行失败", "Usage: notice <Text> <Flag> <Begin>")
 
 # ----------------------------------------------------------------------------------------------------------------------
