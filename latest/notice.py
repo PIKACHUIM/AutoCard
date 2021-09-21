@@ -181,6 +181,10 @@ def mailPost(text, mail, head, yxzh, yxmm, host, port=465, pcrt='SSL'):
             sendmsg = smtplib.SMTP(host, port)
             sendmsg.ehlo()
             sendmsg.starttls()
+        elif pcrt == 'None':
+            sendmsg = smtplib.SMTP(host, port)
+            
+            sendmsg.ehlo()
         else:
             return 2
         sendmsg.login(yxzh, yxmm)
@@ -188,7 +192,7 @@ def mailPost(text, mail, head, yxzh, yxmm, host, port=465, pcrt='SSL'):
         debugLog('邮件发送', '成功发送邮件：' + mail, 1)
         sendmsg.quit()
         return 0
-    except BaseException or IOError or ValueError as e:
+    except BaseException as e:
         debugLog('邮件发送', '无法发送邮件：' + mail, 2)
         print(e)
         return 1
