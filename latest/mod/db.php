@@ -1,6 +1,5 @@
 <?php
 
-
 /*----------------------执行指定的命令----------------------
 		用法：db_exec("插入语句")
 		返回：bool-true：成功
@@ -12,6 +11,7 @@ function db_exec($db_exec_comm){
   $db_exec_conn = mysqli_connect( 
   $db_json_data['db_host'],$db_json_data['db_user'],$db_json_data['db_pass'],$db_json_data['db_name']);
   $db_exec_data = $db_exec_conn->query($db_exec_comm);
+  $db_conf_dbug = false;
   if($db_conf_dbug == true and $db_exec_conn ->error!="")
     echo   "\n[数据库错误]".$db_exec_conn ->error."\n";
          $db_exec_conn ->close();
@@ -61,6 +61,7 @@ function db_getc($db_getc_form,  //数据表名
                  $db_getc_item,  //查找内容
                  $db_getc_dtnm){ //返回类目
             $db_getc_path = dirname(dirname(__FILE__));
+    $db_conf_dbug = false;
     $db_getc_sqlu = 'SELECT * FROM '
                     .$db_getc_form
                     ." WHERE "
