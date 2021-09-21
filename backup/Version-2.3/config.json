@@ -1,7 +1,0 @@
-{
-  "db_name": "pcard",
-  "db_user": "pcard",
-  "db_pass": "pcard",
-  "db_host": "127.0.0.1",
-  "db_port": 3306
-}

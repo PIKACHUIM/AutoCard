@@ -1,7 +1,7 @@
 {
-  "db_name": "pcard",
-  "db_user": "pcard",
-  "db_pass": "pcard",
+  "db_name": "card_db",
+  "db_user": "card_db",
+  "db_pass": "card_db",
   "db_host": "127.0.0.1",
   "db_port": 3306
 }

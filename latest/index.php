@@ -1,6 +1,6 @@
 <html>
     <head>
-        <title>SCU自动打卡系统 2.3</title>
+        <title>SCU自动打卡系统 2.4</title>
         <meta name="viewport" content="width=device-width,initial-scale=1.0, minimum-scale=1.0 maximum-scale=1.0, user-scalable=no"/>
         <style>
                 button {
@@ -63,7 +63,7 @@
         <div style="width:100%">
 		<h1 align=center>SCU自动打卡系统</h1>
             <h2 align=center>
-            版本2.3 使用说明
+            版本2.4 使用说明
             </h2>
             <div style="font-size:18px" align=center>
                 本系统每天按照你选择的时间进行打卡
