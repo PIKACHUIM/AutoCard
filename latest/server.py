@@ -275,7 +275,7 @@ def autoCard(in_flag, in_time):
         cards_nums = cards_nums + 1
         debugLog("自动打卡", "-------------------------------")
         debugLog('当前选中', '当前选中用户学号：' + str(cards_user[0]), 0)
-        cards_flag = 9
+        cards_flag = 10
         while cards_flag > 0:
             cards_data = timeouts(cards_user)
             if cards_data is not None:
@@ -297,6 +297,7 @@ def autoCard(in_flag, in_time):
                     elif cards_data==3:
                         debugLog('打卡结果', statucode[cards_data]+','+detailnum[cards_data])
                         cards_flag = 0
+                        break
                     # 未知错误 --------------------------------------------------------------
                     elif cards_data==2:
                         debugLog('打卡结果', statucode[cards_data]+','+detailnum[cards_data])
@@ -304,14 +305,15 @@ def autoCard(in_flag, in_time):
                     # 未知错误 --------------------------------------------------------------
                     elif cards_data==1:
                         debugLog('打卡结果', statucode[cards_data]+','+detailnum[cards_data])
-                        cards_flag = 0
                 else:
                     debugLog('打卡结果', statucode[cards_data] + ',' + detailnum[cards_data], cards_data)
                     cards_flag = 0
-            if cards_flag<1:
+                    break
+            if cards_flag <= 1:
                 debugLog('打卡结果', '此用户全部打卡尝试失败,跳过打卡')
+                break
             else:
-                debugLog('打卡结果', '第'+ str(10-cards_flag)+'次打卡尝试失败，即将重试打卡')
+                debugLog('打卡结果', '第'+ str(11-cards_flag)+'次打卡尝试失败，即将重试打卡')
                 cards_flag = cards_flag -1
         title_text = "<h2>SCU健康每日报自动打卡系统</h2><br />"
         infos_text = "你好，你的账号：<b> " + str(cards_user[0]) + "<br /></b>今日的打卡情况：" + statucode[cards_data]
