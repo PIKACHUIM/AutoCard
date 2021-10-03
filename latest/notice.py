@@ -99,10 +99,9 @@ def debugLog(in_head, in_info, in_leve=0):
 
     
 @time_out(9, timeout_callback)
-def sendmail(in_head, title_text, infos_text, detai_text, tails_text, cards_user, mysql_dat2):
+def sendmail(in_head, title_text, infos_text, detai_text, tails_text, cards_user, mysql_dat2, mail_sets):
     try:
-        mailPost(title_text + infos_text + detai_text + tails_text, cards_user[2],
-        "【SCU自动打卡系统】" + in_head,
+        mailPost(title_text + infos_text + detai_text + tails_text, mail_sets, "【SCU自动打卡系统】" + in_head,
         mysql_dat2[0][2], mysql_dat2[1][2], mysql_dat2[2][2], mysql_dat2[3][2], mysql_dat2[4][2])
         return True
     except BaseException or IOError:
@@ -110,11 +109,10 @@ def sendmail(in_head, title_text, infos_text, detai_text, tails_text, cards_user
         return False
 
 # -----------------------------------------------------自动打卡程序-------------------------------------------------------
-def autoMail(in_head, in_text, in_flag, in_bgat, in_ends):
+def autoMail(in_head, in_text, in_bgat=0, in_ends=9999999999999):
     debugLog("自动打卡", "-------------------------------")
     debugLog("自动打卡", "开始执行" + datetime.datetime.now().strftime('%Y-%m-%d-%H') + "的邮件任务", 0)
     debugLog("自动打卡", "-------------------------------")
-    cards_nums = 0
     try:
         with open("config.json", 'r') as load_f:
             mysql_conf = json.load(load_f)
@@ -145,21 +143,39 @@ def autoMail(in_head, in_text, in_flag, in_bgat, in_ends):
         mysql_conn.rollback()
         debugLog('数据读取', '无法获取用户:' + str(cards_errs), 5)
         return 1
+    loop = 0
+    mail = ""
+    text = ""
+    nums = 0
+    maxl = len(mysql_dat1)
     for cards_user in mysql_dat1:
-        if in_flag and str(cards_user[0])!="2018141461344":
-            continue
+        nums = nums + 1
         if int(cards_user[0]) < in_bgat:
             continue
         if int(cards_user[0]) > in_ends:
             break
-        time.sleep(1)
-        cards_nums = cards_nums + 1
-        debugLog('当前选中', '当前选中用户学号：' + str(cards_user[0]), 0)
-        title_text = "<h2>SCU健康每日报自动打卡系统</h2><br />"
-        infos_text = "你好，账号：<b> " + str(cards_user[0]) + "</b>，下列消息值得你关注："
-        detai_text = "<br />" + in_text + "</b>"
-        tails_text = "<br />获取更多信息请访问<a href='http://card.52pika.cn'>皮卡丘自动打卡平台</a>"
-        sendmail(in_head, title_text, infos_text, detai_text, tails_text, cards_user, mysql_dat2)
+        if loop >= 100 or nums==maxl:
+            debugLog("开始邮箱", "邮件记录结束: " + text)
+            debugLog('当前选中', '当前选中用户学号：' + str(cards_user[0]), 0)
+            title_text = "<h2>SCU健康每日报自动打卡系统</h2><br />"
+            # infos_text = "你好，账号：<b> " + str(cards_user[0]) + "</b>，下列消息值得你关注："
+            infos_text = "你好，下列消息值得你关注："
+            detai_text = "<br />" + in_text + "</b>"
+            tails_text = "<br />获取更多信息请访问<a href='http://card.52pika.cn'>皮卡丘自动打卡平台</a>"
+            sendmail(in_head, title_text, infos_text, detai_text, tails_text, cards_user, mysql_dat2, mail)
+            mail = ""
+            loop = 0
+        else:
+            pattern = r'^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$'
+            text = cards_user[2].replace('\n','')
+            text = text.replace('\r','')
+            if re.match(pattern,text) is not None:
+                if loop != 0:
+                    mail = mail + ',' 
+                else:
+                    debugLog("开始邮箱", "邮件记录开始: " + text)
+                mail = mail + text
+            loop = loop + 1
     mysql_conn.close()
     debugLog("自动打卡", "-------------------------------")
     debugLog("自动打卡", "成功完成" + datetime.datetime.now().strftime('%Y-%m-%d-%H') + "的邮件任务", 0)
@@ -203,13 +219,13 @@ if __name__ == '__main__':
     global times
     times = time.strftime("%Y%m%d%H%M%S", time.localtime(time.time()))
     if len(sys.argv) > 5:
-        autoMail(sys.argv[1], sys.argv[2], str(sys.argv[3])=="True", int(sys.argv[4]), int(sys.argv[5]))
+        autoMail(sys.argv[1], sys.argv[2], int(sys.argv[4]), int(sys.argv[5]))
     elif len(sys.argv) > 4:
-        autoMail(sys.argv[1], sys.argv[2], str(sys.argv[3])=="True", int(sys.argv[4]), 9999999999999)
+        autoMail(sys.argv[1], sys.argv[2], int(sys.argv[4]), 9999999999999)
     elif len(sys.argv) > 3:
-        autoMail(sys.argv[1], sys.argv[2], str(sys.argv[3])=="True", 0, 9999999999999)
+        autoMail(sys.argv[1], sys.argv[2], 0,                9999999999999)
     elif len(sys.argv) > 2:
-        autoMail(sys.argv[1], sys.argv[2], True,                     0, 9999999999999)
+        autoMail(sys.argv[1], sys.argv[2], 0,                9999999999999)
     else:
         debugLog("执行失败", "Usage: notice <Text> <Flag> <Begin>")
 

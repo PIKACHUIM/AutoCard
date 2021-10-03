@@ -1,4 +1,8 @@
 <?php
+    require_once('../checker.php');
+    checkcode($_POST['token'])
+?>
+<?php
 	include '../mod/db.php';
     echo "<title>SCU自动打卡系统</title>";
     if($_POST['user']=='') {
@@ -16,6 +20,7 @@
     <head>
         <title>SCU自动打卡系统</title>
         <meta name="viewport" content="width=device-width,initial-scale=1.0, minimum-scale=1.0 maximum-scale=1.0, user-scalable=no"/>
+        <link rel="stylesheet" href="../css/style.css">
     </head>
     <body>
         <h2>SCU自动打卡系统</h2>
@@ -36,7 +41,7 @@
 		?></h4>
 		<h4>成功次数：<?php echo db_getc("pc_user","user",$_POST['user'],"succ"); ?></h4>
 		<h4>失败次数：<?php echo db_getc("pc_user","user",$_POST['user'],"fail"); ?></h4>
-		<table border="1" style="width:100%">
+		<table border="1" style="width:40%">
 			<tr>
 				<th>编号</th>
 				<th>时间</th>
@@ -57,8 +62,9 @@
 			}
 			?>
 		</table>
+		<br/>
 		<a href="../index.php">
-			<button style="width:100%" >返回</button>
+			<button style="width:100%;max-width:960px;background-color: #7FFFAA" >返回</button>
 		</a>
     </body>
 </html>

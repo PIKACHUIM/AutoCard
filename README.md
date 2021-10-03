@@ -175,6 +175,18 @@
    cd /www/wwwroot/card.geekbang.cf/
    python notice.py '标题' '内容' False 起始学号 停止学号
    
+   killall python3
+   killall python
+   export PATH=/home/scurm/miniconda3/envs/card/bin:$PATH
+   cd /www/wwwroot/card.geekbang.cf/
+   
+   python notice.py '【自动打卡】自动打卡系统已经恢复啦' \
+   '<br/>你好，SCU自动打卡系统经过了两个月的下线之后<b>已经修复完成</b>，现在已经恢复啦
+   <br/>但不知道你是否在校，<b>我们关闭了打卡开关</b>，<b>如你还在校，请<a href="https://ex4-card.geekbang.cf:243/set/">点击此处</a></b>，启用打卡
+   <br/>注意：我们关闭了成功打卡的邮件通知，因为每天发的太多被认为是垃圾邮件了!!!
+   <br/>如果你还要邮件通知/修改信息/取消打卡，请前往<a href="https://card.52pika.cn/">每日健康报自动化打卡平台</a>操作!<br/>
+   <h3>此致，<br/>        皮卡丘川大微服务每日健康报自动化打卡平台</h3>' \
+   False 0 9999999999999
    ```
 
 ## 注意事项

@@ -1,4 +1,8 @@
 <?php
+    require_once('../checker.php');
+    checkcode($_POST['token'])
+?>
+<?php
 	include '../mod/db.php';
     echo "<title>SCU自动打卡系统</title>";
     if($_POST['user']=='') {

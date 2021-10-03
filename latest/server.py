@@ -95,18 +95,20 @@ PostHeads = {
     'Sec-Fetch-Mode': 'navigate',
     'Sec-Fetch-Site': 'same-origin',
 }
-
+global enableLog
+enableLog = True
 
 # -----------------------------------------------------调试信息输出-----------------------------------------------------
 def debugLog(in_head, in_info, in_leve=0):
     global times
+    global enableLog
     infos = ['信息', '成功', '失败', '警告', '错误', '恐慌', '不幸']
-    print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), "[" + in_head + "][" + infos[in_leve] + "]：", in_info)
-    with open("./run/" + times + ".log", "a") as files:
-        files.write(str(
-            time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) + "[" + in_head + "][" + infos[in_leve] + "]：" + str(
-                in_info)) + "\n")
-    files.close()
+    print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), "[" + in_head + "][" + infos[in_leve] + "]: ", in_info)
+    if enableLog:
+        with open("./run/" + times + ".log", "a") as files:
+            files.write(str(
+                time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) + "[" + in_head + "][" + infos[in_leve] + "]：" + str(
+                    in_info)) + "\n")
 
 # 执行函数主体 ----------------------------------------------------------------------------------------------------------
 @time_out(5, timeout_callback)
@@ -140,7 +142,17 @@ def postCard(in_sesi, in_data):
             return 0
         else:
             return 5
-    except requests.exceptions.ConnectionError or BaseException or ValueError:
+    except requests.exceptions.ConnectionError:
+        debugLog('网络错误', e, 3)
+        return 4
+    except ValueError as e:
+        debugLog('未知错误', e, 3)
+        return 5
+    except NameError as e:
+        debugLog('未知错误', e, 3)
+        return 5
+    except BaseException as e:
+        debugLog('未知错误', e, 3)
         return 1
 
 
@@ -174,7 +186,7 @@ def usrLogin(in_user, in_pass, in_sesi):
     else:
         debugLog('验证获取', 'RequestGet验证码获取失败!!!!!!!', 1)
         return 6
-    debugLog('验证获取', '已获得本次验证码ID:  '+login_very, 1)
+    debugLog('验证获取', '已获得本次的验证码ID:'+login_very, 1)
     # 验证码识别过程 ----------------------------------------------------
     
     try:
@@ -189,7 +201,7 @@ def usrLogin(in_user, in_pass, in_sesi):
             if len(text)<6:
                 debugLog('验证获取', 'Muggle-OCR验证码获取失败!!!!!!!', 1)
                 return 6
-            debugLog('验证获取', 'Muggle-OCR识别的验证码:  '+ text.lower(), 1)
+            debugLog('验证获取', 'Muggle-OCR识别的验证码是:'+ text.lower(), 1)
     except requests.exceptions.ConnectionError as e:
         debugLog('验证获取', e, 2)
         return 6
@@ -233,7 +245,7 @@ def usrLogin(in_user, in_pass, in_sesi):
 
 
 # -----------------------------------------------------自动打卡程序-------------------------------------------------------
-def autoCard(in_flag, in_time):
+def autoCard(in_flag, in_time, in_stid=None):
     debugLog("自动打卡", "-------------------------------")
     debugLog("自动打卡", "开始执行" + datetime.datetime.now().strftime('%Y-%m-%d-%H') + "的打卡任务", 0)
     debugLog("自动打卡", "-------------------------------")
@@ -269,8 +281,12 @@ def autoCard(in_flag, in_time):
         debugLog('数据读取', '无法获取用户:' + str(cards_errs), 5)
         return 1
     for cards_user in mysql_dat1:
-        if in_time != cards_user[7] and in_time != -1:
-            continue
+        if in_stid is None:
+            if in_time != cards_user[7] and in_time != -1:
+                continue
+        else:
+            if str(cards_user[0]) != str(in_stid):
+                continue
         time.sleep(1)
         cards_nums = cards_nums + 1
         debugLog("自动打卡", "-------------------------------")
@@ -315,16 +331,21 @@ def autoCard(in_flag, in_time):
             else:
                 debugLog('打卡结果', '第'+ str(11-cards_flag)+'次打卡尝试失败，即将重试打卡')
                 cards_flag = cards_flag -1
-        title_text = "<h2>SCU健康每日报自动打卡系统</h2><br />"
-        infos_text = "你好，你的账号：<b> " + str(cards_user[0]) + "<br /></b>今日的打卡情况：" + statucode[cards_data]
-        detai_text = "<br />系统详细信息：<b>" + detailnum[cards_data] + "</b>"
-        tails_text = "<br />获取更多信息请访问<a href='http://card.52pika.cn'>皮卡丘自动打卡平台</a>"
-        if cards_data == 0:
-            mysql_sql3 = ("UPDATE pc_user SET succ=" + str(int(cards_user[3]) + 1) + " WHERE user=" + str(
-                cards_user[0])).format(1)
-        else:
-            mysql_sql3 = ("UPDATE pc_user SET fail=" + str(int(cards_user[4]) + 1) + " WHERE user=" + str(
-                cards_user[0])).format(1)
+        try:
+            title_text = "<h2>SCU健康每日报自动打卡系统</h2><br />"
+            infos_text = "你好，你的账号：<b> " + str(cards_user[0]) + "<br /></b>今日的打卡情况：" + statucode[cards_data]
+            detai_text = "<br />系统详细信息：<b>" + detailnum[cards_data] + "</b>"
+            tails_text = "<br />获取更多信息请访问<a href='http://card.52pika.cn'>皮卡丘自动打卡平台</a>"
+            if cards_data == 0:
+                mysql_sql3 = ("UPDATE pc_user SET succ=" + str(int(cards_user[3]) + 1) + " WHERE user=" + str(
+                    cards_user[0])).format(1)
+            else:
+                mysql_sql3 = ("UPDATE pc_user SET fail=" + str(int(cards_user[4]) + 1) + " WHERE user=" + str(
+                    cards_user[0])).format(1)
+        except TypeError as e:
+            debugLog('数据写入', '数据异常:'+e, 3)
+        except BaseException as e:
+            debugLog('数据写入', '未知问题:'+e, 3)
         try:
             mysql_sql4 = ("INSERT INTO pc_logs (dkid,time,user,flag,info) VALUES ("
                           + "'" + str(int(datetime.datetime.now().strftime('%y%m%d%H%M')) * 10000 + cards_nums) + "',"
@@ -340,9 +361,6 @@ def autoCard(in_flag, in_time):
         except pymysql.err.IntegrityError or pymysql.err.IntegrityError or ValueError or BaseException:
             debugLog('数据操作', '日志写入异常！！！！！！！！！！', 3)
             mysql_conn.rollback()
-        if in_flag and (int(cards_user[6]) == 1 or int(cards_data) > 3 or (0 < int(cards_data) < 3)):
-            #sendmail(title_text, infos_text, detai_text, tails_text, cards_user, mysql_dat2)
-            pass
     mysql_conn.close()
     debugLog("自动打卡", "-------------------------------")
     debugLog("自动打卡", "成功完成" + datetime.datetime.now().strftime('%Y-%m-%d-%H') + "的打卡任务", 0)
@@ -383,6 +401,7 @@ if __name__ == '__main__':
     times = time.strftime("%Y%m%d%H%M%S", time.localtime(time.time()))
     main_mail = True
     main_time = 4
+    main_stid = None
     if len(sys.argv) > 1:
         for ptrs in sys.argv:
             if ptrs == 'nomail':
@@ -397,6 +416,9 @@ if __name__ == '__main__':
                 main_time = 3
             elif ptrs == "timeXX":
                 main_time = -1
+            elif ptrs[:4] == "stid":
+                main_stid = ptrs[4:]
+                enableLog = False
             else:
                 pass
     if main_time == 4:
@@ -409,6 +431,6 @@ if __name__ == '__main__':
             main_time = 0
         else:
             main_time = 3
-    autoCard(main_mail, main_time)
+    autoCard(main_mail, main_time, main_stid)
 
 # ----------------------------------------------------------------------------------------------------------------------
